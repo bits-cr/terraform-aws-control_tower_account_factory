@@ -320,12 +320,12 @@ variable "terraform_version" {
 }
 
 variable "terraform_distribution" {
-  description = "Terraform distribution being used for AFT - valid values are oss, tfc, or tfe"
+  description = "Terraform distribution being used for AFT - valid values are oss, opentofu, tfc, or tfe"
   type        = string
   default     = "oss"
   validation {
-    condition     = contains(["oss", "tfc", "tfe"], var.terraform_distribution)
-    error_message = "Valid values for var: terraform_distribution are (oss, tfc, tfe)."
+    condition     = contains(["oss", "opentofu", "tfc", "tfe"], var.terraform_distribution)
+    error_message = "Valid values for var: terraform_distribution are (oss, opentofu, tfc, tfe)."
   }
 }
 
