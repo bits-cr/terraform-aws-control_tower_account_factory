@@ -1,0 +1,10 @@
+[tool.commitizen]
+changelog_merge_prerelease = true
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_scheme = "semver2"
+version = "1.19.0"
+bump_message = "chore(release): v$new_version"
+version_files = [
+    "VERSION"
+]
