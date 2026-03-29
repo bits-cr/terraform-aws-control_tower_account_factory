@@ -16,6 +16,7 @@ phases:
       - TF_KMS_KEY_ID=$(aws ssm get-parameter --name $SSM_TF_KMS_KEY_ID --query "Parameter.Value" --output text)
       - TF_DDB_TABLE=$(aws ssm get-parameter --name $SSM_TF_DDB_TABLE --query "Parameter.Value" --output text)
       - TF_VERSION=$(aws ssm get-parameter --name $SSM_TF_VERSION --query "Parameter.Value" --output text)
+      - TF_DISTRIBUTION=$(aws ssm get-parameter --name "/aft/config/terraform/distribution" --query "Parameter.Value" --output text)
 
 
       # Configure Development SSH Key
@@ -45,12 +46,20 @@ phases:
       - chmod +x $DEFAULT_PATH/aws-aft-core-framework/sources/scripts/creds.sh
       - $DEFAULT_PATH/aws-aft-core-framework/sources/scripts/creds.sh
 
-      # Install Terraform
+      # Install Terraform or OpenTofu
       - cd /tmp
-      - echo "Installing Terraform"
-      - curl -q -o terraform_${TF_VERSION}_linux_amd64.zip https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip
-      - unzip -q -o terraform_${TF_VERSION}_linux_amd64.zip && mv terraform /usr/bin
-      - terraform --version
+      - |
+        if [ $TF_DISTRIBUTION = "opentofu" ]; then
+          echo "Installing OpenTofu"
+          curl -qLo tofu_${TF_VERSION}_linux_amd64.zip https://github.com/opentofu/opentofu/releases/download/v${TF_VERSION}/tofu_${TF_VERSION}_linux_amd64.zip
+          unzip -q -o tofu_${TF_VERSION}_linux_amd64.zip && mv tofu /usr/bin
+          tofu --version
+        else
+          echo "Installing Terraform"
+          curl -q -o terraform_${TF_VERSION}_linux_amd64.zip https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip
+          unzip -q -o terraform_${TF_VERSION}_linux_amd64.zip && mv terraform /usr/bin
+          terraform --version
+        fi
 
       # Install Python Dependencies
       - python3 -m venv ./venv
@@ -76,6 +85,12 @@ phases:
   build:
     on-failure: ABORT
     commands:
-      - export AWS_PROFILE=aft-management-admin
-      - terraform init -no-color
-      - terraform apply -var="account_id=$VENDED_ACCOUNT_ID" -no-color --auto-approve
+      - |
+        if [ $TF_DISTRIBUTION = "opentofu" ]; then
+          TF_CMD=tofu
+        else
+          TF_CMD=terraform
+        fi
+        export AWS_PROFILE=aft-management-admin
+        $TF_CMD init -no-color
+        $TF_CMD apply -var="account_id=$VENDED_ACCOUNT_ID" -no-color --auto-approve
