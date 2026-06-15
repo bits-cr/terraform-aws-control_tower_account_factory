@@ -515,3 +515,9 @@ variable "aft_metrics_reporting" {
     error_message = "Valid values for var: aft_metrics_reporting are (true, false)."
   }
 }
+
+variable "account_request_processor_schedule" {
+  description = "EventBridge schedule expression for the account request processor Lambda"
+  type        = string
+  default     = "rate(5 minutes)"
+}

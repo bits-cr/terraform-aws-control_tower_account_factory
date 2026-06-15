@@ -62,6 +62,7 @@ module "aft_account_request_framework" {
   aft_customer_vpc_id                         = var.aft_customer_vpc_id
   aft_customer_private_subnets                = var.aft_customer_private_subnets
   sns_topic_enable_cmk_encryption             = var.sns_topic_enable_cmk_encryption
+  account_request_processor_schedule          = var.account_request_processor_schedule
 }
 
 module "aft_backend" {

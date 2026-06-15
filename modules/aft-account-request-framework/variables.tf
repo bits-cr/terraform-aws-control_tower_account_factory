@@ -85,3 +85,9 @@ variable "aft_customer_private_subnets" {
 variable "sns_topic_enable_cmk_encryption" {
   type = bool
 }
+
+variable "account_request_processor_schedule" {
+  description = "EventBridge schedule expression for the account request processor Lambda"
+  type        = string
+  default     = "rate(5 minutes)"
+}

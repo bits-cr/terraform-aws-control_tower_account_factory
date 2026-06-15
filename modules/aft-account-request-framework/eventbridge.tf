@@ -65,7 +65,7 @@ resource "aws_cloudwatch_event_target" "aft_invoke_aft_account_provisioning_fram
 resource "aws_cloudwatch_event_rule" "aft_account_request_processor" {
   name                = "aft-lambda-account-request-processor"
   description         = "Trigger Lambda"
-  schedule_expression = "rate(5 minutes)"
+  schedule_expression = var.account_request_processor_schedule
 }
 
 resource "aws_cloudwatch_event_target" "aft_account_request_processor" {
