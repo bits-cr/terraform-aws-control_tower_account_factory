@@ -1,83 +1,201 @@
-# AWS Control Tower Account Factory for Terraform
-AWS Control Tower Account Factory for Terraform (AFT) follows a GitOps model to automate the processes of account provisioning and account updating in AWS Control Tower. You'll create an *account request* Terraform file, which provides the necessary input that triggers the AFT workflow for account provisioning.
+# terraform-docs
 
+[![Build Status](https://github.com/terraform-docs/terraform-docs/workflows/ci/badge.svg)](https://github.com/terraform-docs/terraform-docs/actions) [![GoDoc](https://pkg.go.dev/badge/github.com/terraform-docs/terraform-docs)](https://pkg.go.dev/github.com/terraform-docs/terraform-docs) [![Go Report Card](https://goreportcard.com/badge/github.com/terraform-docs/terraform-docs)](https://goreportcard.com/report/github.com/terraform-docs/terraform-docs) [![Codecov Report](https://codecov.io/gh/terraform-docs/terraform-docs/branch/master/graph/badge.svg)](https://codecov.io/gh/terraform-docs/terraform-docs) [![License](https://img.shields.io/github/license/terraform-docs/terraform-docs)](https://github.com/terraform-docs/terraform-docs/blob/master/LICENSE) [![Latest release](https://img.shields.io/github/v/release/terraform-docs/terraform-docs)](https://github.com/terraform-docs/terraform-docs/releases)
 
-For more information on AFT, see [Overview of AWS Control Tower Account Factory for Terraform](https://docs.aws.amazon.com/controltower/latest/userguide/aft-overview.html)
+![terraform-docs-teaser](./images/terraform-docs-teaser.png)
 
-## Getting started
+Sponsored by [Scalr - Terraform Automation & Collaboration Software](https://scalr.com/?utm_source=terraform-docs)
 
-This guide is intended for administrators of AWS Control Tower environments who wish to set up Account Factory for Terraform (AFT) in their environment. It describes how to set up an Account Factory for Terraform (AFT) environment with a new, dedicated AFT management account. This guide follows the deployment steps outlined in [Deploy AWS Control Tower Account Factory for Terraform (AFT)](https://docs.aws.amazon.com/controltower/latest/userguide/aft-getting-started.html)
+<a href="https://www.scalr.com/?utm_source=terraform-docs" target="_blank"><img src="https://bit.ly/2T7Qm3U" alt="Scalr - Terraform Automation & Collaboration Software" width="175" height="40" /></a>
 
-## Configure and launch your AWS Control Tower Account Factory for Terraform
+## What is terraform-docs
 
-Five steps are required to configure and launch your AFT environment.
+A utility to generate documentation from Terraform modules in various output formats.
 
-**Step 1**: Launch your AWS Control Tower landing zone
+## Installation
 
-Before launching AFT, you must have a working AWS Control Tower landing zone in your AWS account. You will configure and launch AFT from the AWS Control Tower management account.
+macOS users can install using [Homebrew]:
 
-**Step 2**: Create a new organizational unit for AFT (recommended)
+```bash
+brew install terraform-docs
+```
 
-We recommend that you create a separate OU in your AWS Organization, where you will deploy the AFT management account. Create an OU through your AWS Control Tower management account. For instructions on how to create an OU, refer to Create an organization in the AWS Organizations User Guide.
+or
 
-**Step 3**: Provision the AFT management account
+```bash
+brew install terraform-docs/tap/terraform-docs
+```
 
-AFT requires a separate AWS account to manage and orchestrate its own requests. From the AWS Control Tower management account that's associated with your AWS Control Tower landing zone, you'll provision this account for AFT.
+Windows users can install using [Scoop]:
 
-To provision the AFT management account, see [Provisioning Account Factory Accounts With AWS Service Catalog](https://docs.aws.amazon.com/controltower/latest/userguide/provision-as-end-user.html). When specifying an OU, be sure to select the OU you created in Step 2. When specifying a name, use "AFT-Management".
+```bash
+scoop bucket add terraform-docs https://github.com/terraform-docs/scoop-bucket
+scoop install terraform-docs
+```
 
-Note: It can take up to 30 minutes for the account to be fully provisioned. Validate that you have access to the AFT management account.
+or [Chocolatey]:
 
-**Step 4**: Ensure that the Terraform environment is available for deployment
+```bash
+choco install terraform-docs
+```
 
-This step assumes that you are experienced with Terraform, and that you have procedures in place for executing Terraform. AFT supports Terraform Version 0.15.x or later.
+Stable binaries are also available on the [releases] page. To install, download the
+binary for your platform from "Assets" and place this into your `$PATH`:
 
-**Step 5**: Call the Account Factory for Terraform module to deploy AFT
+```bash
+curl -Lo ./terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v0.16.0/terraform-docs-v0.16.0-$(uname)-amd64.tar.gz
+tar -xzf terraform-docs.tar.gz
+chmod +x terraform-docs
+mv terraform-docs /usr/local/terraform-docs
+```
 
-The Account Factory for Terraform module must be called while you are authenticated with AdministratorAccess credentials in your AWS Control Tower management account.
+**NOTE:** Windows releases are in `ZIP` format.
 
-AWS Control Tower, through the AWS Control Tower management account, vends a Terraform module that establishes all infrastructure necessary to orchestrate your AWS Control Tower account factory requests. You can view that module in the AFT repository.
+The latest version can be installed using `go install` or `go get`:
 
-Refer to the module’s README file for information about the input required to run the module and deploy AFT.
+```bash
+# go1.17+
+go install github.com/terraform-docs/terraform-docs@v0.16.0
+```
 
-If you have established pipelines for managing Terraform in your environment, you can integrate this module into your existing workflow. Otherwise, run the module from any environment that is authenticated with the required credentials.
+```bash
+# go1.16
+GO111MODULE="on" go get github.com/terraform-docs/terraform-docs@v0.16.0
+```
 
-> Note: The AFT Terraform module does not manage a backend Terraform state. Be sure to preserve the Terraform state file that’s generated, after applying the module, or set up a Terraform backend using Amazon S3 and DynamoDB.
+**NOTE:** please use the latest Go to do this, minimum `go1.16` is required.
 
-Certain input variables may contain sensitive values, such as a private ssh key or Terraform token. These values may be viewable as plain text in Terraform state file, depending on your deployment method. It is your responsibility to protect the Terraform state file, which may contain sensitive data. See the Terraform documentation
+This will put `terraform-docs` in `$(go env GOPATH)/bin`. If you encounter the error
+`terraform-docs: command not found` after installation then you may need to either add
+that directory to your `$PATH` as shown [here] or do a manual installation by cloning
+the repo and run `make build` from the repository which will put `terraform-docs` in:
 
-for more information.
+```bash
+$(go env GOPATH)/src/github.com/terraform-docs/terraform-docs/bin/$(uname | tr '[:upper:]' '[:lower:]')-amd64/terraform-docs
+```
 
-> Note: Deploying AFT through the Terraform module requires several minutes. Initial deployment may require up to 30 minutes. As a best practice, use AWS Security Token Service (STS) credentials and ensure that the credentials have a timeout sufficient for a full deployment, because a timeout causes the deployment to fail. The minimum timeout for AWS STS credentials is 60 minutes or more. Alternatively, you can leverage any IAM user that has AdministratorAccess permissions in the AWS Control Tower management account.
+## Usage
 
-## Next Steps:
+### Running the binary directly
 
-Now that you have configured and deployed AWS Control Tower Account Factory for Terraform, follow the steps outlined in [Post-deployment steps](https://docs.aws.amazon.com/controltower/latest/userguide/aft-post-deployment.html) and [Provision accounts with AWS Control Tower Account Factory for Terraform](https://docs.aws.amazon.com/controltower/latest/userguide/taf-account-provisioning.html) to begin using your environment.
+To run and generate documentation into README within a directory:
 
-## Collection of Operational Metrics
-As of version 1.6.0, AFT collects anonymous operational metrics to help AWS improve the quality and features of the solution. For more information, including how to disable this capability, please see the [documentation here](https://docs.aws.amazon.com/controltower/latest/userguide/aft-operational-metrics.html).
+```bash
+terraform-docs markdown table --output-file README.md --output-mode inject /path/to/module
+```
 
-## Security Considerations
+Check [`output`] configuration for more details and examples.
 
-### HCP Terraform / Terraform Enterprise OIDC Workspace Governance
+### Using docker
 
-When you enable the HCP Terraform or Terraform Enterprise OIDC integration (`terraform_oidc_integration = true`), AFT configures the `AWSAFTAdmin` IAM role with a trust policy that allows any workspace within your configured TFC/TFE organization and project to assume the role via OIDC. The trust policy uses a `sub` claim condition scoped to your organization, project, and audience, but uses a wildcard (`workspace:*`) for the workspace name.
+terraform-docs can be run as a container by mounting a directory with `.tf`
+files in it and run the following command:
 
-**Existing mitigations:**
-- The trust policy is scoped to your specific TFC/TFE **organization**, **project**, and **audience** — only workspaces within the configured project can obtain credentials.
-- The `AWSAFTAdmin` role is limited to `sts:AssumeRole` permissions only (to assume `AWSAFTExecution` and `AWSAFTService` roles). It has no direct permissions to access or modify AWS resources.
+```bash
+docker run --rm --volume "$(pwd):/terraform-docs" -u $(id -u) quay.io/terraform-docs/terraform-docs:0.16.0 markdown /terraform-docs
+```
 
-**Customer responsibility:**
+If `output.file` is not enabled for this module, generated output can be redirected
+back to a file:
 
-> **Important:** Workspace governance within your configured TFC/TFE project is your responsibility. Any workspace created within the project specified by `terraform_project_name` can assume the `AWSAFTAdmin` role via OIDC. You should take the following steps to secure your environment:
+```bash
+docker run --rm --volume "$(pwd):/terraform-docs" -u $(id -u) quay.io/terraform-docs/terraform-docs:0.16.0 markdown /terraform-docs > doc.md
+```
 
-- **Restrict workspace creation:** Limit who can create new workspaces within the TFC/TFE project used by AFT. Use [TFC/TFE team permissions](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions) to control workspace management access.
-- **Audit workspace access:** Regularly review the workspaces in your AFT project to ensure only authorized workspaces exist.
-- **Use a dedicated project:** Use a dedicated TFC/TFE project exclusively for AFT workspaces. Avoid sharing the project with unrelated workspaces.
-- **Consider workspace-specific scoping (optional):** For additional security, after deployment you can manually modify the `AWSAFTAdmin` trust policy to replace the `workspace:*` wildcard with explicit workspace names (e.g., `workspace:my-aft-workspace`). Note that this customization must be maintained outside of AFT and re-applied after AFT updates.
+**NOTE:** Docker tag `latest` refers to _latest_ stable released version and `edge`
+refers to HEAD of `master` at any given point in time.
 
+### Using GitHub Actions
 
-<!-- BEGIN_TF_DOCS -->
+To use terraform-docs GitHub Action, configure a YAML workflow file (e.g.
+`.github/workflows/documentation.yml`) with the following:
+
+```yaml
+name: Generate terraform docs
+on:
+  - pull_request
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+
+    - name: Render terraform docs and push changes back to PR
+      uses: terraform-docs/gh-actions@main
+      with:
+        working-dir: .
+        output-file: README.md
+        output-method: inject
+        git-push: "true"
+```
+
+Read more about [terraform-docs GitHub Action] and its configuration and
+examples.
+
+### pre-commit hook
+
+With pre-commit, you can ensure your Terraform module documentation is kept
+up-to-date each time you make a commit.
+
+First [install pre-commit] and then create or update a `.pre-commit-config.yaml`
+in the root of your Git repo with at least the following content:
+
+```yaml
+repos:
+  - repo: https://github.com/terraform-docs/terraform-docs
+    rev: "v0.16.0"
+    hooks:
+      - id: terraform-docs-go
+        args: ["markdown", "table", "--output-file", "README.md", "./mymodule/path"]
+```
+
+Then run:
+
+```bash
+pre-commit install
+pre-commit install-hooks
+```
+
+Further changes to your module's `.tf` files will cause an update to documentation
+when you make a commit.
+
+## Configuration
+
+terraform-docs can be configured with a yaml file. The default name of this file is
+`.terraform-docs.yml` and the path order for locating it is:
+
+1. root of module directory
+1. `.config/` folder at root of module directory
+1. current directory
+1. `.config/` folder at current directory
+1. `$HOME/.tfdocs.d/`
+
+```yaml
+formatter: "" # this is required
+
+version: ""
+
+header-from: main.tf
+footer-from: ""
+
+recursive:
+  enabled: false
+  path: modules
+
+sections:
+  hide: []
+  show: []
+
+content: ""
+
+output:
+  file: ""
+  mode: inject
+  template: |-
+    <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
@@ -124,12 +242,15 @@ When you enable the HCP Terraform or Terraform Enterprise OIDC integration (`ter
 | <a name="input_account_customizations_repo_name"></a> [account\_customizations\_repo\_name](#input\_account\_customizations\_repo\_name) | Repository name for the account customizations files. For non-CodeCommit repos, name should be in the format of Org/Repo | `string` | `"aft-account-customizations"` | no |
 | <a name="input_account_provisioning_customizations_repo_branch"></a> [account\_provisioning\_customizations\_repo\_branch](#input\_account\_provisioning\_customizations\_repo\_branch) | Branch to source account provisioning customization files | `string` | `"main"` | no |
 | <a name="input_account_provisioning_customizations_repo_name"></a> [account\_provisioning\_customizations\_repo\_name](#input\_account\_provisioning\_customizations\_repo\_name) | Repository name for the account provisioning customizations files. For non-CodeCommit repos, name should be in the format of Org/Repo | `string` | `"aft-account-provisioning-customizations"` | no |
+| <a name="input_account_provisioning_customizations_workspace_name"></a> [account\_provisioning\_customizations\_workspace\_name](#input\_account\_provisioning\_customizations\_workspace\_name) | Workspace name to use for the account provisioning customizations operation in Terraform Cloud or Enterprise. Note: changing this value for an existing deployment creates a new workspace and orphans the old one - it is not an in-place rename. | `string` | `"ct-aft-account-provisioning-customizations"` | no |
 | <a name="input_account_request_repo_branch"></a> [account\_request\_repo\_branch](#input\_account\_request\_repo\_branch) | Branch to source account request repo from | `string` | `"main"` | no |
 | <a name="input_account_request_repo_name"></a> [account\_request\_repo\_name](#input\_account\_request\_repo\_name) | Repository name for the account request files. For non-CodeCommit repos, name should be in the format of Org/Repo | `string` | `"aft-account-request"` | no |
+| <a name="input_account_request_workspace_name"></a> [account\_request\_workspace\_name](#input\_account\_request\_workspace\_name) | Workspace name to use for the account request operation in Terraform Cloud or Enterprise. Note: changing this value for an existing deployment creates a new workspace and orphans the old one - it is not an in-place rename. | `string` | `"ct-aft-account-request"` | no |
 | <a name="input_aft_backend_bucket_access_logs_object_expiration_days"></a> [aft\_backend\_bucket\_access\_logs\_object\_expiration\_days](#input\_aft\_backend\_bucket\_access\_logs\_object\_expiration\_days) | Amount of days to keep the objects stored in the access logs bucket for AFT backend buckets | `number` | `365` | no |
 | <a name="input_aft_codebuild_compute_type"></a> [aft\_codebuild\_compute\_type](#input\_aft\_codebuild\_compute\_type) | The CodeBuild compute type that build projects will use. | `string` | `"BUILD_GENERAL1_MEDIUM"` | no |
 | <a name="input_aft_customer_private_subnets"></a> [aft\_customer\_private\_subnets](#input\_aft\_customer\_private\_subnets) | A list of private subnets to deploy AFT resources in, if customer is providing an existing VPC. Only supported for new deployments. | `list(string)` | `[]` | no |
 | <a name="input_aft_customer_vpc_id"></a> [aft\_customer\_vpc\_id](#input\_aft\_customer\_vpc\_id) | The VPC ID to deploy AFT resources in, if customer is providing an existing VPC. Only supported for new deployments. | `string` | `null` | no |
+| <a name="input_aft_customization_triggers"></a> [aft\_customization\_triggers](#input\_aft\_customization\_triggers) | List of customization trigger tokens. When non-empty, matching events trigger customization re-execution with provisioning bypass. Valid tokens: account\_move. Per-account opt-out via account\_skip\_customization\_triggers attribute in aft-request. | `list(string)` | `[]` | no |
 | <a name="input_aft_enable_vpc"></a> [aft\_enable\_vpc](#input\_aft\_enable\_vpc) | Flag turning use of VPC on/off for AFT | `bool` | `true` | no |
 | <a name="input_aft_feature_cloudtrail_data_events"></a> [aft\_feature\_cloudtrail\_data\_events](#input\_aft\_feature\_cloudtrail\_data\_events) | Feature flag toggling CloudTrail data events on/off | `bool` | `false` | no |
 | <a name="input_aft_feature_delete_default_vpcs_enabled"></a> [aft\_feature\_delete\_default\_vpcs\_enabled](#input\_aft\_feature\_delete\_default\_vpcs\_enabled) | Feature flag toggling deletion of default VPCs on/off | `bool` | `false` | no |
@@ -196,6 +317,7 @@ When you enable the HCP Terraform or Terraform Enterprise OIDC integration (`ter
 | <a name="output_aft_backend_secondary_kms_key_id"></a> [aft\_backend\_secondary\_kms\_key\_id](#output\_aft\_backend\_secondary\_kms\_key\_id) | n/a |
 | <a name="output_aft_controltower_events_table_name"></a> [aft\_controltower\_events\_table\_name](#output\_aft\_controltower\_events\_table\_name) | n/a |
 | <a name="output_aft_ct_management_exec_role_arn"></a> [aft\_ct\_management\_exec\_role\_arn](#output\_aft\_ct\_management\_exec\_role\_arn) | n/a |
+| <a name="output_aft_customization_triggers"></a> [aft\_customization\_triggers](#output\_aft\_customization\_triggers) | n/a |
 | <a name="output_aft_exec_role_arn"></a> [aft\_exec\_role\_arn](#output\_aft\_exec\_role\_arn) | n/a |
 | <a name="output_aft_failure_sns_topic_arn"></a> [aft\_failure\_sns\_topic\_arn](#output\_aft\_failure\_sns\_topic\_arn) | n/a |
 | <a name="output_aft_feature_cloudtrail_data_events"></a> [aft\_feature\_cloudtrail\_data\_events](#output\_aft\_feature\_cloudtrail\_data\_events) | n/a |
@@ -236,3 +358,238 @@ When you enable the HCP Terraform or Terraform Enterprise OIDC integration (`ter
 | <a name="output_tf_backend_secondary_region"></a> [tf\_backend\_secondary\_region](#output\_tf\_backend\_secondary\_region) | n/a |
 | <a name="output_vcs_provider"></a> [vcs\_provider](#output\_vcs\_provider) | n/a |
 <!-- END_TF_DOCS -->
+
+output-values:
+  enabled: false
+  from: ""
+
+sort:
+  enabled: true
+  by: name
+
+settings:
+  anchor: true
+  color: true
+  default: true
+  description: false
+  escape: true
+  hide-empty: false
+  html: true
+  indent: 2
+  lockfile: true
+  read-comments: true
+  required: true
+  sensitive: true
+  type: true
+```
+
+## Content Template
+
+Generated content can be customized further away with `content` in configuration.
+If the `content` is empty the default order of sections is used.
+
+Compatible formatters for customized content are `asciidoc` and `markdown`. `content`
+will be ignored for other formatters.
+
+`content` is a Go template with following additional variables:
+
+- `{{ .Header }}`
+- `{{ .Footer }}`
+- `{{ .Inputs }}`
+- `{{ .Modules }}`
+- `{{ .Outputs }}`
+- `{{ .Providers }}`
+- `{{ .Requirements }}`
+- `{{ .Resources }}`
+
+and following functions:
+
+- `{{ include "relative/path/to/file" }}`
+
+These variables are the generated output of individual sections in the selected
+formatter. For example `{{ .Inputs }}` is Markdown Table representation of _inputs_
+when formatter is set to `markdown table`.
+
+Note that sections visibility (i.e. `sections.show` and `sections.hide`) takes
+precedence over the `content`.
+
+Additionally there's also one extra special variable avaialble to the `content`:
+
+- `{{ .Module }}`
+
+As opposed to the other variables mentioned above, which are generated sections
+based on a selected formatter, the `{{ .Module }}` variable is just a `struct`
+representing a [Terraform module].
+
+````yaml
+content: |-
+  Any arbitrary text can be placed anywhere in the content
+
+  {{ .Header }}
+
+  and even in between sections
+
+  {{ .Providers }}
+
+  and they don't even need to be in the default order
+
+  {{ .Outputs }}
+
+  include any relative files
+
+  {{ include "relative/path/to/file" }}
+
+  {{ .Inputs }}
+
+  # Examples
+
+  ```hcl
+  {{ include "examples/foo/main.tf" }}
+  ```
+
+  ## Resources
+
+  {{ range .Module.Resources }}
+  - {{ .GetMode }}.{{ .Spec }} ({{ .Position.Filename }}#{{ .Position.Line }})
+  {{- end }}
+````
+
+## Build on top of terraform-docs
+
+terraform-docs primary use-case is to be utilized as a standalone binary, but
+some parts of it is also available publicly and can be imported in your project
+as a library.
+
+```go
+import (
+    "github.com/terraform-docs/terraform-docs/format"
+    "github.com/terraform-docs/terraform-docs/print"
+    "github.com/terraform-docs/terraform-docs/terraform"
+)
+
+// buildTerraformDocs for module root `path` and provided content `tmpl`.
+func buildTerraformDocs(path string, tmpl string) (string, error) {
+    config := print.DefaultConfig()
+    config.ModuleRoot = path // module root path (can be relative or absolute)
+
+    module, err := terraform.LoadWithOptions(config)
+    if err != nil {
+        return "", err
+    }
+
+    // Generate in Markdown Table format
+    formatter := format.NewMarkdownTable(config)
+
+    if err := formatter.Generate(module); err != nil {
+        return "", err
+    }
+
+    // // Note: if you don't intend to provide additional template for the generated
+    // // content, or the target format doesn't provide templating (e.g. json, yaml,
+    // // xml, or toml) you can use `Content()` function instead of `Render()`.
+    // // `Content()` returns all the sections combined with predefined order.
+    // return formatter.Content(), nil
+
+    return formatter.Render(tmpl)
+}
+```
+
+## Plugin
+
+Generated output can be heavily customized with [`content`], but if using that
+is not enough for your use-case, you can write your own plugin.
+
+In order to install a plugin the following steps are needed:
+
+- download the plugin and place it in `~/.tfdocs.d/plugins` (or `./.tfdocs.d/plugins`)
+- make sure the plugin file name is `tfdocs-format-<NAME>`
+- modify [`formatter`] of `.terraform-docs.yml` file to be `<NAME>`
+
+**Important notes:**
+
+- if the plugin file name is different than the example above, terraform-docs won't
+be able to to pick it up nor register it properly
+- you can only use plugin thorough `.terraform-docs.yml` file and it cannot be used
+with CLI arguments
+
+To create a new plugin create a new repository called `tfdocs-format-<NAME>` with
+following `main.go`:
+
+```go
+package main
+
+import (
+    _ "embed" //nolint
+
+    "github.com/terraform-docs/terraform-docs/plugin"
+    "github.com/terraform-docs/terraform-docs/print"
+    "github.com/terraform-docs/terraform-docs/template"
+    "github.com/terraform-docs/terraform-docs/terraform"
+)
+
+func main() {
+    plugin.Serve(&plugin.ServeOpts{
+        Name:    "<NAME>",
+        Version: "0.1.0",
+        Printer: printerFunc,
+    })
+}
+
+//go:embed sections.tmpl
+var tplCustom []byte
+
+// printerFunc the function being executed by the plugin client.
+func printerFunc(config *print.Config, module *terraform.Module) (string, error) {
+    tpl := template.New(config,
+        &template.Item{Name: "custom", Text: string(tplCustom)},
+    )
+
+    rendered, err := tpl.Render("custom", module)
+    if err != nil {
+        return "", err
+    }
+
+    return rendered, nil
+}
+```
+
+Please refer to [tfdocs-format-template] for more details. You can create a new
+repository from it by clicking on `Use this template` button.
+
+## Documentation
+
+- **Users**
+  - Read the [User Guide] to learn how to use terraform-docs
+  - Read the [Formats Guide] to learn about different output formats of terraform-docs
+  - Refer to [Config File Reference] for all the available configuration options
+- **Developers**
+  - Read [Contributing Guide] before submitting a pull request
+
+Visit [our website] for all documentation.
+
+## Community
+
+- Discuss terraform-docs on [Slack]
+
+## License
+
+MIT License - Copyright (c) 2021 The terraform-docs Authors.
+
+[Chocolatey]: https://www.chocolatey.org
+[Config File Reference]: https://terraform-docs.io/user-guide/configuration/
+[`content`]: https://terraform-docs.io/user-guide/configuration/content/
+[Contributing Guide]: CONTRIBUTING.md
+[Formats Guide]: https://terraform-docs.io/reference/terraform-docs/
+[`formatter`]: https://terraform-docs.io/user-guide/configuration/formatter/
+[here]: https://golang.org/doc/code.html#GOPATH
+[Homebrew]: https://brew.sh
+[install pre-commit]: https://pre-commit.com/#install
+[`output`]: https://terraform-docs.io/user-guide/configuration/output/
+[releases]: https://github.com/terraform-docs/terraform-docs/releases
+[Scoop]: https://scoop.sh/
+[Slack]: https://slack.terraform-docs.io/
+[terraform-docs GitHub Action]: https://github.com/terraform-docs/gh-actions
+[Terraform module]: https://pkg.go.dev/github.com/terraform-docs/terraform-docs/terraform#Module
+[tfdocs-format-template]: https://github.com/terraform-docs/tfdocs-format-template
+[our website]: https://terraform-docs.io/
+[User Guide]: https://terraform-docs.io/user-guide/introduction/
