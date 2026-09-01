@@ -399,9 +399,14 @@ resource "aws_dynamodb_table" "lock-table" {
 
   name             = "aft-backend-${data.aws_caller_identity.current.account_id}"
   billing_mode     = "PAY_PER_REQUEST"
-  hash_key         = "LockID"
   stream_enabled   = true
   stream_view_type = "NEW_AND_OLD_IMAGES"
+
+  key_schema {
+    attribute_name = "LockID"
+    key_type       = "HASH"
+  }
+
   attribute {
     name = "LockID"
     type = "S"
