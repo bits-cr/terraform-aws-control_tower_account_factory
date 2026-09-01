@@ -18,7 +18,29 @@
                 "kms:DescribeKey",
                 "kms:Decrypt"
             ],
-            "Resource": "*"
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "aws:SourceOrgID": "${data_aws_organizations_organization_aft_organization_id}"
+                }
+            }
+        },
+        {
+            "Sid": "AllowS3LoggingServiceAccess",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "logging.s3.amazonaws.com"
+            },
+            "Action": [
+                "kms:GenerateDataKey",
+                "kms:Encrypt"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "aws:SourceAccount": "${log_archive_account_id}"
+                }
+            }
         },
         {
             "Sid": "Enable IAM User Permissions",

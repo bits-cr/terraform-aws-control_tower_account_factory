@@ -15,6 +15,8 @@ resource "aws_s3_bucket_logging" "aft_logging_bucket_logging" {
   bucket        = aws_s3_bucket.aft_logging_bucket.id
   target_bucket = aws_s3_bucket.aft_access_logs.id
   target_prefix = "log/"
+
+  depends_on = [time_sleep.wait_for_kms_key_policy_propagation]
 }
 
 resource "aws_s3_bucket_versioning" "aft_logging_bucket_versioning" {
@@ -34,6 +36,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "aft_logging_bucke
       kms_master_key_id = aws_kms_key.aft_log_key.arn
       sse_algorithm     = "aws:kms"
     }
+    bucket_key_enabled = true
   }
 }
 
@@ -97,15 +100,16 @@ resource "aws_s3_bucket_versioning" "aft_access_logs_versioning" {
   }
 }
 
-#tfsec:ignore:aws-s3-encryption-customer-key
 resource "aws_s3_bucket_server_side_encryption_configuration" "aft_access_logs_encryption" {
   provider = aws.log_archive
   bucket   = aws_s3_bucket.aft_access_logs.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      kms_master_key_id = aws_kms_key.aft_log_key.arn
+      sse_algorithm     = "aws:kms"
     }
+    bucket_key_enabled = true
   }
 }
 

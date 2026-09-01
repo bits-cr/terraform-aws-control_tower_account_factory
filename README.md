@@ -77,12 +77,32 @@ When you enable the HCP Terraform or Terraform Enterprise OIDC integration (`ter
 - **Consider workspace-specific scoping (optional):** For additional security, after deployment you can manually modify the `AWSAFTAdmin` trust policy to replace the `workspace:*` wildcard with explicit workspace names (e.g., `workspace:my-aft-workspace`). Note that this customization must be maintained outside of AFT and re-applied after AFT updates.
 
 
+
+## Known Limitations
+
+### Customization Triggers Concurrency
+
+When `aft_customization_triggers` is configured with `["account_move"]`, customization re-executions triggered by account moves bypass the `maximum_concurrent_customizations` throttle. Each account move generates a separate Control Tower event that invokes the provisioning framework independently. Moving many accounts between OUs simultaneously (e.g., a bulk reorganization) may result in concurrent customization executions exceeding the configured maximum. For environments where bulk account moves are expected, consider staggering the moves or implementing EventBridge-layer throttling.
+
+### Customization Triggers Supported Event Paths
+
+Customization triggers are detected from AWS Control Tower `UpdateManagedAccount` events only. When an account is moved to a different OU through Account Factory, the `account_move` trigger fires. This includes AFT-mediated moves, where you change the `ManagedOrganizationalUnit` value in an account request file.
+
+The following paths do **not** emit an `UpdateManagedAccount` event and therefore do not trigger customization re-execution:
+
+- Moving an account directly in AWS Organizations (outside Account Factory). This also places the account out of sync with Control Tower governance until it is re-enrolled.
+- Enrolling an existing account via Auto Enroll (registering an OU that contains existing accounts). Enrollment is not an account move; accounts onboarded this way receive customizations through the normal AFT account request flow, not through `account_move`.
+
+If an account reaches its target OU through one of these paths, re-run customizations manually via the `aft-invoke-customizations` Step Function.
+
+
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.2.0, < 2.0.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.6.1, < 2.0.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0.0, < 7.0.0 |
 
 ## Providers
@@ -124,12 +144,16 @@ When you enable the HCP Terraform or Terraform Enterprise OIDC integration (`ter
 | <a name="input_account_customizations_repo_name"></a> [account\_customizations\_repo\_name](#input\_account\_customizations\_repo\_name) | Repository name for the account customizations files. For non-CodeCommit repos, name should be in the format of Org/Repo | `string` | `"aft-account-customizations"` | no |
 | <a name="input_account_provisioning_customizations_repo_branch"></a> [account\_provisioning\_customizations\_repo\_branch](#input\_account\_provisioning\_customizations\_repo\_branch) | Branch to source account provisioning customization files | `string` | `"main"` | no |
 | <a name="input_account_provisioning_customizations_repo_name"></a> [account\_provisioning\_customizations\_repo\_name](#input\_account\_provisioning\_customizations\_repo\_name) | Repository name for the account provisioning customizations files. For non-CodeCommit repos, name should be in the format of Org/Repo | `string` | `"aft-account-provisioning-customizations"` | no |
+| <a name="input_account_provisioning_customizations_workspace_name"></a> [account\_provisioning\_customizations\_workspace\_name](#input\_account\_provisioning\_customizations\_workspace\_name) | Workspace name to use for the account provisioning customizations operation in Terraform Cloud or Enterprise. Note: changing this value for an existing deployment creates a new workspace and orphans the old one - it is not an in-place rename. | `string` | `"ct-aft-account-provisioning-customizations"` | no |
+| <a name="input_account_request_processor_schedule"></a> [account\_request\_processor\_schedule](#input\_account\_request\_processor\_schedule) | EventBridge schedule expression for the account request processor Lambda | `string` | `"rate(5 minutes)"` | no |
 | <a name="input_account_request_repo_branch"></a> [account\_request\_repo\_branch](#input\_account\_request\_repo\_branch) | Branch to source account request repo from | `string` | `"main"` | no |
 | <a name="input_account_request_repo_name"></a> [account\_request\_repo\_name](#input\_account\_request\_repo\_name) | Repository name for the account request files. For non-CodeCommit repos, name should be in the format of Org/Repo | `string` | `"aft-account-request"` | no |
+| <a name="input_account_request_workspace_name"></a> [account\_request\_workspace\_name](#input\_account\_request\_workspace\_name) | Workspace name to use for the account request operation in Terraform Cloud or Enterprise. Note: changing this value for an existing deployment creates a new workspace and orphans the old one - it is not an in-place rename. | `string` | `"ct-aft-account-request"` | no |
 | <a name="input_aft_backend_bucket_access_logs_object_expiration_days"></a> [aft\_backend\_bucket\_access\_logs\_object\_expiration\_days](#input\_aft\_backend\_bucket\_access\_logs\_object\_expiration\_days) | Amount of days to keep the objects stored in the access logs bucket for AFT backend buckets | `number` | `365` | no |
 | <a name="input_aft_codebuild_compute_type"></a> [aft\_codebuild\_compute\_type](#input\_aft\_codebuild\_compute\_type) | The CodeBuild compute type that build projects will use. | `string` | `"BUILD_GENERAL1_MEDIUM"` | no |
 | <a name="input_aft_customer_private_subnets"></a> [aft\_customer\_private\_subnets](#input\_aft\_customer\_private\_subnets) | A list of private subnets to deploy AFT resources in, if customer is providing an existing VPC. Only supported for new deployments. | `list(string)` | `[]` | no |
 | <a name="input_aft_customer_vpc_id"></a> [aft\_customer\_vpc\_id](#input\_aft\_customer\_vpc\_id) | The VPC ID to deploy AFT resources in, if customer is providing an existing VPC. Only supported for new deployments. | `string` | `null` | no |
+| <a name="input_aft_customization_triggers"></a> [aft\_customization\_triggers](#input\_aft\_customization\_triggers) | List of customization trigger tokens. When non-empty, matching events trigger customization re-execution with provisioning bypass. Valid tokens: account\_move. Per-account opt-out via account\_skip\_customization\_triggers attribute in aft-request. | `list(string)` | `[]` | no |
 | <a name="input_aft_enable_vpc"></a> [aft\_enable\_vpc](#input\_aft\_enable\_vpc) | Flag turning use of VPC on/off for AFT | `bool` | `true` | no |
 | <a name="input_aft_feature_cloudtrail_data_events"></a> [aft\_feature\_cloudtrail\_data\_events](#input\_aft\_feature\_cloudtrail\_data\_events) | Feature flag toggling CloudTrail data events on/off | `bool` | `false` | no |
 | <a name="input_aft_feature_delete_default_vpcs_enabled"></a> [aft\_feature\_delete\_default\_vpcs\_enabled](#input\_aft\_feature\_delete\_default\_vpcs\_enabled) | Feature flag toggling deletion of default VPCs on/off | `bool` | `false` | no |
@@ -146,6 +170,7 @@ When you enable the HCP Terraform or Terraform Enterprise OIDC integration (`ter
 | <a name="input_aft_vpc_public_subnet_02_cidr"></a> [aft\_vpc\_public\_subnet\_02\_cidr](#input\_aft\_vpc\_public\_subnet\_02\_cidr) | CIDR Block to allocate to the Public Subnet 02 | `string` | `"192.168.2.128/25"` | no |
 | <a name="input_audit_account_id"></a> [audit\_account\_id](#input\_audit\_account\_id) | Audit Account Id | `string` | n/a | yes |
 | <a name="input_backup_recovery_point_retention"></a> [backup\_recovery\_point\_retention](#input\_backup\_recovery\_point\_retention) | Number of days to keep backup recovery points in AFT DynamoDB tables. Default = Never Expire | `number` | `null` | no |
+| <a name="input_backup_schedule"></a> [backup\_schedule](#input\_backup\_schedule) | Cron expression for the DynamoDB backup schedule. Default = hourly | `string` | `"cron(0 * * * ? *)"` | no |
 | <a name="input_cloudwatch_log_group_enable_cmk_encryption"></a> [cloudwatch\_log\_group\_enable\_cmk\_encryption](#input\_cloudwatch\_log\_group\_enable\_cmk\_encryption) | Flag toggling CloudWatch Log Groups encryption by using the AFT customer managed key stored in KMS. Additional charges apply. Otherwise, logs will use CloudWatch managed server-side encryption. | `bool` | `false` | no |
 | <a name="input_cloudwatch_log_group_retention"></a> [cloudwatch\_log\_group\_retention](#input\_cloudwatch\_log\_group\_retention) | Amount of days to keep CloudWatch Log Groups for Lambda functions. 0 = Never Expire | `string` | `"0"` | no |
 | <a name="input_concurrent_account_factory_actions"></a> [concurrent\_account\_factory\_actions](#input\_concurrent\_account\_factory\_actions) | Maximum number of accounts that can be provisioned in parallel. | `number` | `5` | no |
@@ -163,14 +188,14 @@ When you enable the HCP Terraform or Terraform Enterprise OIDC integration (`ter
 | <a name="input_sns_topic_enable_cmk_encryption"></a> [sns\_topic\_enable\_cmk\_encryption](#input\_sns\_topic\_enable\_cmk\_encryption) | Flag toggling SNS topics encryption by using the AFT Customer managed key stored in KMS. Additional charges apply. Otherwise the SNS topics are encrypted using the AWS-managed KMS key. | `bool` | `false` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Map of tags to apply to resources deployed by AFT. | `map(any)` | `null` | no |
 | <a name="input_terraform_api_endpoint"></a> [terraform\_api\_endpoint](#input\_terraform\_api\_endpoint) | API Endpoint for Terraform. Must be in the format of https://xxx.xxx. | `string` | `"https://app.terraform.io/api/v2/"` | no |
-| <a name="input_terraform_distribution"></a> [terraform\_distribution](#input\_terraform\_distribution) | Terraform distribution being used for AFT - valid values are oss, tfc, or tfe | `string` | `"oss"` | no |
+| <a name="input_terraform_distribution"></a> [terraform\_distribution](#input\_terraform\_distribution) | Terraform distribution being used for AFT - valid values are oss, opentofu, tfc, or tfe | `string` | `"oss"` | no |
 | <a name="input_terraform_oidc_aws_audience"></a> [terraform\_oidc\_aws\_audience](#input\_terraform\_oidc\_aws\_audience) | The audience value to use in run identity tokens for HCP dynamic credentials (OIDC). var.aft\_feature\_hcp\_oidc must be set to true to enable OIDC. | `string` | `"aws.workload.identity"` | no |
 | <a name="input_terraform_oidc_hostname"></a> [terraform\_oidc\_hostname](#input\_terraform\_oidc\_hostname) | The hostname of the TFC or TFE instance to use with AWS when configuring dynamic credentials (OIDC). var.aft\_feature\_hcp\_oidc must be set to true to enable OIDC. | `string` | `"app.terraform.io"` | no |
 | <a name="input_terraform_oidc_integration"></a> [terraform\_oidc\_integration](#input\_terraform\_oidc\_integration) | Enable HCP Terraform’s native OpenID Connect integration with AWS to get dynamic credentials for the AWS provider in your HCP Terraform runs | `bool` | `false` | no |
 | <a name="input_terraform_org_name"></a> [terraform\_org\_name](#input\_terraform\_org\_name) | Organization name for Terraform Cloud or Enterprise | `string` | `"null"` | no |
 | <a name="input_terraform_project_name"></a> [terraform\_project\_name](#input\_terraform\_project\_name) | Project name for Terraform Cloud or Enterprise - project must exist before deployment | `string` | `"Default Project"` | no |
 | <a name="input_terraform_token"></a> [terraform\_token](#input\_terraform\_token) | Terraform token for Cloud or Enterprise | `string` | `"null"` | no |
-| <a name="input_terraform_version"></a> [terraform\_version](#input\_terraform\_version) | Terraform version being used for AFT | `string` | `"1.6.0"` | no |
+| <a name="input_terraform_version"></a> [terraform\_version](#input\_terraform\_version) | Terraform version being used for AFT | `string` | `"1.6.1"` | no |
 | <a name="input_tf_backend_secondary_region"></a> [tf\_backend\_secondary\_region](#input\_tf\_backend\_secondary\_region) | AFT creates a backend for state tracking for its own state as well as OSS cases. The backend's primary region is the same as the AFT region, but this defines the secondary region to replicate to. | `string` | `""` | no |
 | <a name="input_vcs_provider"></a> [vcs\_provider](#input\_vcs\_provider) | Customer VCS Provider - valid inputs are codecommit, bitbucket, github, githubenterprise, gitlab, or gitLab self-managed | `string` | `"codecommit"` | no |
 
@@ -195,6 +220,7 @@ When you enable the HCP Terraform or Terraform Enterprise OIDC integration (`ter
 | <a name="output_aft_backend_secondary_kms_key_id"></a> [aft\_backend\_secondary\_kms\_key\_id](#output\_aft\_backend\_secondary\_kms\_key\_id) | n/a |
 | <a name="output_aft_controltower_events_table_name"></a> [aft\_controltower\_events\_table\_name](#output\_aft\_controltower\_events\_table\_name) | n/a |
 | <a name="output_aft_ct_management_exec_role_arn"></a> [aft\_ct\_management\_exec\_role\_arn](#output\_aft\_ct\_management\_exec\_role\_arn) | n/a |
+| <a name="output_aft_customization_triggers"></a> [aft\_customization\_triggers](#output\_aft\_customization\_triggers) | n/a |
 | <a name="output_aft_exec_role_arn"></a> [aft\_exec\_role\_arn](#output\_aft\_exec\_role\_arn) | n/a |
 | <a name="output_aft_failure_sns_topic_arn"></a> [aft\_failure\_sns\_topic\_arn](#output\_aft\_failure\_sns\_topic\_arn) | n/a |
 | <a name="output_aft_feature_cloudtrail_data_events"></a> [aft\_feature\_cloudtrail\_data\_events](#output\_aft\_feature\_cloudtrail\_data\_events) | n/a |

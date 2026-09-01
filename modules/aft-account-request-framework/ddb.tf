@@ -24,15 +24,15 @@ resource "aws_dynamodb_table" "aft_request_metadata" {
 
   global_secondary_index {
     name            = "typeIndex"
-    projection_type = "ALL"
     hash_key        = "type"
+    projection_type = "ALL"
   }
 
   global_secondary_index {
     name               = "emailIndex"
+    hash_key           = "email"
     projection_type    = "INCLUDE"
     non_key_attributes = ["id"]
-    hash_key           = "email"
   }
 
   point_in_time_recovery {
@@ -49,9 +49,9 @@ resource "aws_dynamodb_table" "aft_request_metadata" {
 resource "aws_dynamodb_table" "aft_request" {
   name             = "aft-request"
   billing_mode     = "PAY_PER_REQUEST"
+  hash_key         = "id"
   stream_enabled   = true
   stream_view_type = "NEW_AND_OLD_IMAGES"
-  hash_key         = "id"
 
   attribute {
     name = "id"
@@ -72,10 +72,10 @@ resource "aws_dynamodb_table" "aft_request" {
 resource "aws_dynamodb_table" "aft_request_audit" {
   name             = "aft-request-audit"
   billing_mode     = "PAY_PER_REQUEST"
-  stream_enabled   = true
-  stream_view_type = "NEW_AND_OLD_IMAGES"
   hash_key         = "id"
   range_key        = "timestamp"
+  stream_enabled   = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
 
   attribute {
     name = "id"
@@ -101,10 +101,10 @@ resource "aws_dynamodb_table" "aft_request_audit" {
 resource "aws_dynamodb_table" "aft_controltower_events" {
   name             = "aft-controltower-events"
   billing_mode     = "PAY_PER_REQUEST"
-  stream_enabled   = true
-  stream_view_type = "NEW_AND_OLD_IMAGES"
   hash_key         = "id"
   range_key        = "time"
+  stream_enabled   = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
 
   attribute {
     name = "id"
@@ -113,6 +113,34 @@ resource "aws_dynamodb_table" "aft_controltower_events" {
 
   attribute {
     name = "time"
+    type = "S"
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  server_side_encryption {
+    enabled     = true
+    kms_key_arn = aws_kms_key.aft.arn
+  }
+}
+
+
+# Table that stores execution-level audit data for customization invocations
+resource "aws_dynamodb_table" "aft_customizations_audit" {
+  name         = "aft-customizations-audit"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "execution_id"
+  range_key    = "timestamp"
+
+  attribute {
+    name = "execution_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "timestamp"
     type = "S"
   }
 
