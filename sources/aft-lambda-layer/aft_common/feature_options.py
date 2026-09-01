@@ -242,6 +242,12 @@ def create_trail(session: Session, s3_bucket: str, kms_key: str) -> None:
     )
 
 
+def delete_trail(session: Session) -> None:
+    client = session.client("cloudtrail")
+    logger.info("Deleting trail " + CLOUDTRAIL_TRAIL_NAME)
+    client.delete_trail(Name=CLOUDTRAIL_TRAIL_NAME)
+
+
 def put_event_selectors(session: Session, log_bucket_arns: List[str]) -> None:
     client = session.client("cloudtrail")
     logger.info("Putting Event Selectors")
@@ -253,7 +259,7 @@ def put_event_selectors(session: Session, log_bucket_arns: List[str]) -> None:
                 "FieldSelectors": [
                     {"Field": "eventCategory", "Equals": ["Data"]},
                     {"Field": "resources.type", "Equals": ["AWS::S3::Object"]},
-                    {"Field": "resources.ARN", "NotEquals": log_bucket_arns},
+                    {"Field": "resources.ARN", "NotStartsWith": log_bucket_arns},
                 ],
             },
             {
@@ -277,7 +283,7 @@ def get_log_bucket_arns(session: Session) -> List[str]:
     bucket_arns = []
     for b in response["Buckets"]:
         bucket_arns.append(
-            f"arn:{utils.get_aws_partition(session)}:s3:::" + b["Name"] + "/*"
+            f"arn:{utils.get_aws_partition(session)}:s3:::" + b["Name"] + "/"
         )
     logger.info(str(bucket_arns))
     return bucket_arns
