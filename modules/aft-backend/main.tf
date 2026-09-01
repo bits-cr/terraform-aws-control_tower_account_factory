@@ -98,7 +98,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "primary-backend-b
       kms_master_key_id = aws_kms_key.encrypt-primary-region.arn
       sse_algorithm     = "aws:kms"
     }
-    bucket_key_enabled = true
+    bucket_key_enabled       = true
+    blocked_encryption_types = ["SSE-C"]
   }
 }
 
@@ -133,7 +134,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "secondary-backend
       kms_master_key_id = aws_kms_key.encrypt-secondary-region[0].arn
       sse_algorithm     = "aws:kms"
     }
-    bucket_key_enabled = true
+    bucket_key_enabled       = true
+    blocked_encryption_types = ["SSE-C"]
   }
 }
 
@@ -352,7 +354,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "aft_access_logs_p
       kms_master_key_id = aws_kms_key.aft_access_logs_primary_backend_bucket.arn
       sse_algorithm     = "aws:kms"
     }
-    bucket_key_enabled = true
+    bucket_key_enabled       = true
+    blocked_encryption_types = ["SSE-C"]
   }
 }
 
