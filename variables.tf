@@ -128,6 +128,12 @@ variable "sfn_s3_bucket_object_expiration_days" {
   default     = 90
 }
 
+variable "aft_plan_output_retention_days" {
+  description = "Number of days to retain plan output files in the plan output S3 bucket before automatic expiration"
+  type        = number
+  default     = 30
+}
+
 variable "maximum_concurrent_customizations" {
   description = "Maximum number of customizations/pipelines to run at once"
   type        = number
@@ -560,4 +566,10 @@ variable "account_request_processor_schedule" {
   description = "EventBridge schedule expression for the account request processor Lambda"
   type        = string
   default     = "rate(5 minutes)"
+}
+
+variable "aft_plan_output_export_enabled" {
+  description = "When true, plan-only runs on the HCP Terraform path export plan JSON output to the S3 plan output bucket. When false (default), plan output is only available in the HCP Terraform UI."
+  type        = bool
+  default     = false
 }
