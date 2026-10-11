@@ -168,11 +168,25 @@ resource "aws_lambda_function" "aft_account_request_processor" {
 }
 
 resource "aws_lambda_permission" "aft_account_request_processor" {
+  count         = var.account_request_processor_schedule == "" ? 0 : 1
   statement_id  = "AllowExecutionFromCloudWatch"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.aft_account_request_processor.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.aft_account_request_processor.arn
+  source_arn    = aws_cloudwatch_event_rule.aft_account_request_processor[0].arn
+}
+
+moved {
+  from = aws_lambda_permission.aft_account_request_processor
+  to   = aws_lambda_permission.aft_account_request_processor[0]
+}
+
+resource "aws_lambda_permission" "aft_account_request_processor_ct_events" {
+  statement_id  = "AllowExecutionFromCTEvents"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.aft_account_request_processor.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.aft_controltower_event_trigger.arn
 }
 
 resource "aws_cloudwatch_log_group" "aft_account_request_processor" {

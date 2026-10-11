@@ -16,7 +16,8 @@
 			],
 			"Resource": [
 				"${aws_lambda_function_invoke_aft_account_provisioning_framework_arn}",
-                "${aws_lambda_function_cleanup_resources_arn}"
+                "${aws_lambda_function_cleanup_resources_arn}",
+                "${aws_lambda_function_account_request_processor_arn}"
 			]
         },
 		{

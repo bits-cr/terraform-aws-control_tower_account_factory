@@ -91,7 +91,7 @@ variable "sns_topic_enable_cmk_encryption" {
 }
 
 variable "account_request_processor_schedule" {
-  description = "EventBridge schedule expression for the account request processor Lambda"
+  description = "EventBridge schedule expression for the account request processor Lambda. Set to \"\" to disable polling; the processor is still invoked when a request is queued and when Control Tower completes an account operation."
   type        = string
   default     = "rate(5 minutes)"
 }

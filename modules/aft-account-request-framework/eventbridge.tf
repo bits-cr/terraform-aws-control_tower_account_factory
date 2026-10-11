@@ -62,13 +62,36 @@ resource "aws_cloudwatch_event_target" "aft_invoke_aft_account_provisioning_fram
 }
 
 ######### Account Processor Lambda #########
+# Optional polling schedule. The processor is also invoked by
+# aft-account-request-action-trigger when a request is queued, and by the
+# target below when Control Tower finishes an account operation.
 resource "aws_cloudwatch_event_rule" "aft_account_request_processor" {
+  count               = var.account_request_processor_schedule == "" ? 0 : 1
   name                = "aft-lambda-account-request-processor"
   description         = "Trigger Lambda"
   schedule_expression = var.account_request_processor_schedule
 }
 
 resource "aws_cloudwatch_event_target" "aft_account_request_processor" {
-  arn  = aws_lambda_function.aft_account_request_processor.arn
-  rule = aws_cloudwatch_event_rule.aft_account_request_processor.id
+  count = var.account_request_processor_schedule == "" ? 0 : 1
+  arn   = aws_lambda_function.aft_account_request_processor.arn
+  rule  = aws_cloudwatch_event_rule.aft_account_request_processor[0].id
+}
+
+moved {
+  from = aws_cloudwatch_event_rule.aft_account_request_processor
+  to   = aws_cloudwatch_event_rule.aft_account_request_processor[0]
+}
+
+moved {
+  from = aws_cloudwatch_event_target.aft_account_request_processor
+  to   = aws_cloudwatch_event_target.aft_account_request_processor[0]
+}
+
+# Drain the queue when a Control Tower account operation completes, so requests
+# held back by AFT_PROVISIONING_CONCURRENCY are picked up without polling.
+resource "aws_cloudwatch_event_target" "aft_account_request_processor_on_ct_event" {
+  rule           = aws_cloudwatch_event_rule.aft_controltower_event_trigger.name
+  arn            = aws_lambda_function.aft_account_request_processor.arn
+  event_bus_name = aws_cloudwatch_event_bus.aft_from_ct_management.name
 }
