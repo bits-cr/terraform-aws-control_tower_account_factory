@@ -557,7 +557,11 @@ variable "aft_metrics_reporting" {
 }
 
 variable "account_request_processor_schedule" {
-  description = "EventBridge schedule expression for the account request processor Lambda"
+  description = "EventBridge schedule expression for the account request processor Lambda. Set to \"\" to disable polling; the processor is still invoked when a request is queued and when Control Tower completes an account operation."
   type        = string
   default     = "rate(5 minutes)"
+  validation {
+    condition     = var.account_request_processor_schedule == "" || can(regex("^(rate|cron)\\(.+\\)$", var.account_request_processor_schedule))
+    error_message = "Valid values for var: account_request_processor_schedule are \"\" or an EventBridge rate()/cron() expression."
+  }
 }

@@ -73,6 +73,7 @@ resource "aws_iam_role_policy" "aft_account_request_action_trigger" {
     aws_sns_topic_aft_failure_notifications_arn                       = aws_sns_topic.aft_failure_notifications.arn
     aws_lambda_function_invoke_aft_account_provisioning_framework_arn = aws_lambda_function.aft_invoke_aft_account_provisioning_framework.arn
     aws_lambda_function_cleanup_resources_arn                         = aws_lambda_function.aft_cleanup_resources.arn
+    aws_lambda_function_account_request_processor_arn                 = aws_lambda_function.aft_account_request_processor.arn
     aws_sqs_queue_aft_account_request_arn                             = aws_sqs_queue.aft_account_request.arn
     aws_kms_key_aft_arn                                               = aws_kms_key.aft.arn
     aws_dynamodb_table_aft-request_name                               = aws_dynamodb_table.aft_request.name
